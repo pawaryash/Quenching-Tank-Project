@@ -1,18 +1,7 @@
-#SQL Connectivity --done
-#add date and time --done
-
-'''
-STANDARD OPERATING PROCEDURE
-Step 1 - Connect the MOXA and configure its IP 
-Step x - Also configure the host in MOXA's network
-'''
 import pyodbc
 from tkinter import *
 import time
-import pymodbus
-from pymodbus.pdu import ModbusRequest
-from pymodbus.client.sync import ModbusSerialClient as ModbusClient
-from pymodbus.transaction import ModbusRtuFramer
+from pymodbus.client import ModbusSerialClient as ModbusClient
 import threading
 
 root = Tk()
