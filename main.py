@@ -154,7 +154,7 @@ QT4_Graph = Button(frame3, text="QT4 GRAPH", width=20, height=2, font=('Arial','
 
 frame4 = Frame(root)
 frame4.grid(row=10, column=3, pady=10)
-QT4_Graph = Button(frame4, text="QT4 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue').pack(expand=True)
+QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue').pack(expand=True)
 
 
 def readTemperature(client):
