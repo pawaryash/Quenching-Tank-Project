@@ -139,23 +139,23 @@ mentor_label.grid(row=13, column=3, sticky ='e')
 #graph buttons
 frame1 = Frame(root)
 frame1.grid(row=5, column=1, pady=10)
-QT2_Graph = Button(frame1, text="QT2 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black').pack(expand=True)
+QT2_Graph = Button(frame1, text="QT2 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT2 GRAPH")).pack(expand=True)
 
 
 frame2 = Frame(root)
 frame2.grid(row=5, column=3, pady=10)
-QT3_Graph = Button(frame2, text="QT3 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue').pack(expand=True)
+QT3_Graph = Button(frame2, text="QT3 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT3 GRAPH")).pack(expand=True)
 
 
 frame3 = Frame(root)
 frame3.grid(row=10, column=1, pady=10)
-QT4_Graph = Button(frame3, text="QT4 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue').pack(expand=True)
+QT4_Graph = Button(frame3, text="QT4 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT4 GRAPH")).pack(expand=True)
 
 
 frame4 = Frame(root)
 frame4.grid(row=10, column=3, pady=10)
-QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue').pack(expand=True)
-
+QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT5 GRAPH")).pack(expand=True)
+ 
 
 def readTemperature(client):
     while True: 
