@@ -47,11 +47,11 @@ def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
 
 root = Tk()
 root.configure(background="black")
-root.title("Quenching Tank Temperature Monitoring System")
+root.title("Quenching Tank Temperature Monitoring")
 root.geometry("1280x720")
 
 #display label
-heading_label = Label(root, text="QUENCHING TANK TEMPERATURE MONITORING SYSTEM", background="orange", font=('Arial','30','bold'), foreground="black")
+heading_label = Label(root, text="QUENCHING TANK TEMPERATURE MONITORING", background="orange", font=('Arial','30','bold'), foreground="black")
 QT2_label = Label(root, text='Quenching Tank 2', background="skyblue",font=('Arial','30','bold'), foreground="black")
 QT3_label = Label(root, text='Quenching Tank 3', background="skyblue", font=('Arial','30','bold'), foreground="black")
 QT4_label = Label(root, text='Quenching Tank 4', background="skyblue", font=('Arial','30','bold'), foreground="black")
@@ -156,6 +156,7 @@ frame4 = Frame(root)
 frame4.grid(row=10, column=3, pady=10)
 QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT5 GRAPH")).pack(expand=True)
  
+
 
 def readTemperature(client):
     while True: 
