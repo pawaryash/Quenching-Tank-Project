@@ -145,7 +145,7 @@ root.geometry("1280x720")
 
 #display label
 heading_label = Label(root, text="QUENCHING TANK TEMPERATURE MONITORING", background="orange", font=('Arial','30','bold'), foreground="black")
-QT2_label = Label(root, text='Quenching Tank 2', background="skyblue",font=('Arial','30','bold'), foreground="black")
+QT2_label = Label(root, text='Quenching Tank 2', background="skyblue", font=('Arial','30','bold'), foreground="black")
 QT3_label = Label(root, text='Quenching Tank 3', background="skyblue", font=('Arial','30','bold'), foreground="black")
 QT4_label = Label(root, text='Quenching Tank 4', background="skyblue", font=('Arial','30','bold'), foreground="black")
 QT5_label = Label(root, text='Quenching Tank 5', background="skyblue", font=('Arial','30','bold'), foreground="black")
@@ -309,14 +309,15 @@ def readTemperature(client):
                 #close the connection
                 client.close()
                 root.update()
-                time.sleep(2)
-                insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qt5Temp)
+                #time.sleep(2)
+
             else:
                 QT2_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT4_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT5_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red"))
+                moxa_disconnected_exception = moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red")
+                raise Exception(moxa_disconnected_exception)
         except Exception as e:
             #raise this exception if the DP 9 Connecter is disconnected from MOXA.(Failed to read the registers)
             #print(e)
