@@ -1,7 +1,4 @@
-#merging from main to frontend(tkinterFinal.py) and adding to new file merged
-#Added the SQL error handling functionality
-#Added and placed the graph buttons
-#Graph plotting functionality yet to explored.
+#added real time graph for Quenching Tank 2
 
 import pyodbc
 from tkinter import *
@@ -11,6 +8,24 @@ from pymodbus.pdu import ModbusRequest
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 from pymodbus.transaction import ModbusRtuFramer
 import threading
+
+#graph plotting dependencies
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import(
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
+import numpy as np
+from itertools import count
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.dates import DateFormatter
+
+from datetime import timedelta
+
+#GLOBAL VARIABLES DECLARATION
+qT2Temp = None
+qT3Temp = None
+qT4Temp = None 
+qT5Temp = None  
 
 #dump to SQL Database
 #connection string
@@ -22,6 +37,9 @@ conn_str = (
     "UID=jack;"  # Replace with your SQL Server username
     "PWD=jack123;"  # Replace with your SQL Server password
 )
+
+
+    
 def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
     try:
         conn = pyodbc.connect(conn_str)
@@ -43,6 +61,81 @@ def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
     except Exception as e:
         print(e)
         database_connection_label.configure(text="Database Connection: DISCONNECTED", foreground='red')
+
+def open_graph_window(tempVal, graph_name):
+
+    graph_window = Toplevel(root)
+    graph_window.title(graph_name)
+
+    #Initialize Tkinter and Matplotlib Figure
+    fig_graph_qt2, axis_graph_qt2 = plt.subplots()
+
+    x_vals = []
+    y_vals = []
+
+    index = count()
+
+    def animate(i):
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        cursor.execute("SELECT CURRENT_TIMESTAMP")
+        row = cursor.fetchone()
+
+        if row:
+            x_vals.append(row[0])
+            y_vals.append(tempVal) #replace the qT2Temp here
+
+        #clear axis
+        plt.cla()
+        axis_graph_qt2.plot(x_vals, y_vals)
+
+        if len(x_vals) > 10:
+            axis_graph_qt2.set_xlim(left=x_vals[-10], right=x_vals[-1])
+        axis_graph_qt2.set_title('REAL TIME TREND')
+        if y_vals:
+            axis_graph_qt2.set_ylim([0, max(y_vals) + 10])
+        axis_graph_qt2.set_xlabel('TIME')
+        axis_graph_qt2.set_ylabel('TEMP IN °C')
+        #axis_graph_qt2.plot(x_vals,y_vals)
+
+        date_format = DateFormatter('%Y-%m-%d %H:%M')
+        axis_graph_qt2.xaxis.set_major_formatter(date_format)
+        
+        for label in axis_graph_qt2.get_xticklabels():
+            label.set_rotation(45)
+            label.set_fontsize(8)
+
+        # Add padding to the x-axis
+        plt.margins(y=0.2)  # 10% padding in the x direction
+
+    ani = FuncAnimation(plt.gcf(), animate, interval=1000)
+
+    #Tkinter Application Window
+    frame = Frame(graph_window)
+    frame.grid()  # Use grid for frame
+
+    label = Label(frame, text = graph_name, font=('Arial','32','bold'))  # Add label to frame
+    label.grid()  # Use grid for label
+
+    #create canvas
+    canvas = FigureCanvasTkAgg(fig_graph_qt2, master=graph_window)
+    canvas.get_tk_widget().grid(sticky='nsew')  # Use grid for canvas
+
+    # Increase bottom padding
+    plt.subplots_adjust(bottom=0.3)
+
+    #Create Toolbar
+    toolbar_frame = Frame(graph_window)
+    toolbar_frame.grid()  # Use grid for toolbar_frame
+
+    toolbar = NavigationToolbar2Tk(canvas, toolbar_frame)
+    toolbar.update()
+    toolbar.pack()  # Use pack for toolbar
+
+    canvas.draw()
+
+    graph_window.mainloop()
+
 
 
 root = Tk()
@@ -139,28 +232,34 @@ mentor_label.grid(row=13, column=3, sticky ='e')
 #graph buttons
 frame1 = Frame(root)
 frame1.grid(row=5, column=1, pady=10)
-QT2_Graph = Button(frame1, text="QT2 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT2 GRAPH")).pack(expand=True)
+QT2_Graph = Button(frame1, text="QT2 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT2Temp,graph_name="QT2 GRAPH")).grid(row=0, column=0)
 
 
 frame2 = Frame(root)
 frame2.grid(row=5, column=3, pady=10)
-QT3_Graph = Button(frame2, text="QT3 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT3 GRAPH")).pack(expand=True)
+QT3_Graph = Button(frame2, text="QT3 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT3Temp, graph_name="QT3 GRAPH")).grid(row=0, column=0)
 
 
 frame3 = Frame(root)
 frame3.grid(row=10, column=1, pady=10)
-QT4_Graph = Button(frame3, text="QT4 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT4 GRAPH")).pack(expand=True)
+QT4_Graph = Button(frame3, text="QT4 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT4Temp, graph_name="QT4 GRAPH")).grid(row=0, column=0)
 
 
 frame4 = Frame(root)
+frame4 = Frame(root)
 frame4.grid(row=10, column=3, pady=10)
-QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_graph_window(graph_name="QT5 GRAPH")).pack(expand=True)
+QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT5Temp, graph_name="QT5 GRAPH")).grid(row=0, column=0)
  
-
 
 def readTemperature(client):
     while True: 
+        global qT2Temp
+        global qT3Temp
+        global qT4Temp
+        global qT5Temp
+
         qT2Temp = qT3Temp = qT4Temp = qt5Temp = None  # Initialize the temperature variables
+
         try:
             #print("Connecting to the server...")
             connection = client.connect()
@@ -177,7 +276,6 @@ def readTemperature(client):
                     qT2Temp=0
                     QT2_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
                 
-
                 #Quench Tank 3 Temperature
                 try:
                     inpReg3 = client.read_input_registers(0x06,1,unit=3)
@@ -196,7 +294,6 @@ def readTemperature(client):
                     qT4Temp=0
                     QT4_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
                 
-
                 #Quench Tank 5 Temperature
                 try:
                     inpReg5 = client.read_input_registers(0x06,1,unit=5)
@@ -206,7 +303,6 @@ def readTemperature(client):
                     qT5Temp=0
                     QT5_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
                 
-
                 #dump to SQL
                 insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qt5Temp)
                 
