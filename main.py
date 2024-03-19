@@ -3,8 +3,6 @@ Added memory  optimization as the matplotlib plots were not closing upon closing
 window. They remained open in the background taking memory space.
 
 '''
-
-
 import pyodbc
 from tkinter import *
 import time
@@ -77,8 +75,6 @@ def open_graph_window(tempVal, graph_name):
 
     x_vals = []
     y_vals = []
-
-    index = count()
 
     def animate(i):
         conn = pyodbc.connect(conn_str)
