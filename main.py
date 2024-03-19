@@ -1,4 +1,9 @@
-#added real time graph for Quenching Tank 2
+''' 
+Added memory  optimization as the matplotlib plots were not closing upon closing the graph 
+window. They remained open in the background taking memory space.
+
+'''
+
 
 import pyodbc
 from tkinter import *
@@ -68,7 +73,7 @@ def open_graph_window(tempVal, graph_name):
     graph_window.title(graph_name)
 
     #Initialize Tkinter and Matplotlib Figure
-    fig_graph_qt2, axis_graph_qt2 = plt.subplots()
+    fig_graph, axis_graph = plt.subplots()
 
     x_vals = []
     y_vals = []
@@ -81,32 +86,34 @@ def open_graph_window(tempVal, graph_name):
         cursor.execute("SELECT CURRENT_TIMESTAMP")
         row = cursor.fetchone()
 
-        if row:
+        if row and tempVal is not None:
             x_vals.append(row[0])
-            y_vals.append(tempVal) #replace the qT2Temp here
+            y_vals.append(tempVal)
 
         #clear axis
         plt.cla()
-        axis_graph_qt2.plot(x_vals, y_vals)
+        axis_graph.plot(x_vals, y_vals)
 
         if len(x_vals) > 10:
-            axis_graph_qt2.set_xlim(left=x_vals[-10], right=x_vals[-1])
-        axis_graph_qt2.set_title('REAL TIME TREND')
+            axis_graph.set_xlim(left=x_vals[-10], right=x_vals[-1])
+        axis_graph.set_title('REAL TIME TREND')
         if y_vals:
-            axis_graph_qt2.set_ylim([0, max(y_vals) + 10])
-        axis_graph_qt2.set_xlabel('TIME')
-        axis_graph_qt2.set_ylabel('TEMP IN °C')
-        #axis_graph_qt2.plot(x_vals,y_vals)
+            axis_graph.set_ylim([0, max(y_vals) + 10])
+        else:
+            axis_graph.set_xlim([0, 10])
+        axis_graph.set_xlabel('TIME')
+        axis_graph.set_ylabel('TEMP IN °C')
+        #axis_graph.plot(x_vals,y_vals)
 
         date_format = DateFormatter('%Y-%m-%d %H:%M')
-        axis_graph_qt2.xaxis.set_major_formatter(date_format)
+        axis_graph.xaxis.set_major_formatter(date_format)
         
-        for label in axis_graph_qt2.get_xticklabels():
+        for label in axis_graph.get_xticklabels():
             label.set_rotation(45)
             label.set_fontsize(8)
 
-        # Add padding to the x-axis
-        plt.margins(y=0.2)  # 10% padding in the x direction
+        # Add padding to the y-axis
+        plt.margins(y=0.2)  
 
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
 
@@ -118,7 +125,7 @@ def open_graph_window(tempVal, graph_name):
     label.grid()  # Use grid for label
 
     #create canvas
-    canvas = FigureCanvasTkAgg(fig_graph_qt2, master=graph_window)
+    canvas = FigureCanvasTkAgg(fig_graph, master=graph_window)
     canvas.get_tk_widget().grid(sticky='nsew')  # Use grid for canvas
 
     # Increase bottom padding
@@ -134,6 +141,11 @@ def open_graph_window(tempVal, graph_name):
 
     canvas.draw()
 
+    def close_graph_window():
+        plt.close(fig_graph)
+        graph_window.destroy()
+    graph_window.protocol("WM_DELETE_WINDOW", close_graph_window)
+
     graph_window.mainloop()
 
 
@@ -145,7 +157,7 @@ root.geometry("1280x720")
 
 #display label
 heading_label = Label(root, text="QUENCHING TANK TEMPERATURE MONITORING", background="orange", font=('Arial','30','bold'), foreground="black")
-QT2_label = Label(root, text='Quenching Tank 2', background="skyblue", font=('Arial','30','bold'), foreground="black")
+QT2_label = Label(root, text='Quenching Tank 2', background="skyblue",font=('Arial','30','bold'), foreground="black")
 QT3_label = Label(root, text='Quenching Tank 3', background="skyblue", font=('Arial','30','bold'), foreground="black")
 QT4_label = Label(root, text='Quenching Tank 4', background="skyblue", font=('Arial','30','bold'), foreground="black")
 QT5_label = Label(root, text='Quenching Tank 5', background="skyblue", font=('Arial','30','bold'), foreground="black")
@@ -309,15 +321,14 @@ def readTemperature(client):
                 #close the connection
                 client.close()
                 root.update()
-                #time.sleep(2)
-
+                time.sleep(2)
+                insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qt5Temp)
             else:
                 QT2_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT4_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT5_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                moxa_disconnected_exception = moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red")
-                raise Exception(moxa_disconnected_exception)
+                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red"))
         except Exception as e:
             #raise this exception if the DP 9 Connecter is disconnected from MOXA.(Failed to read the registers)
             #print(e)
