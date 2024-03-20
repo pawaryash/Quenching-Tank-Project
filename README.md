@@ -3,7 +3,7 @@
 #### Required dependencies
 
 1. pyodbc
-2. pymodbus
+2. pymodbus==2.4.0
 3. tkinter
 4. time
 5. threading

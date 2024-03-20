@@ -16,8 +16,6 @@ import threading
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import(
     FigureCanvasTkAgg, NavigationToolbar2Tk)
-import numpy as np
-from itertools import count
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.dates import DateFormatter
