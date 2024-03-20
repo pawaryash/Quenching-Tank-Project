@@ -61,6 +61,47 @@ def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
         print(e)
         database_connection_label.configure(text="Database Connection: DISCONNECTED", foreground='red')
 
+def create_settings_window():
+    settings_window = Toplevel(root)
+    settings_window.configure(background="black")
+    settings_window.title("Settings")
+    settings_window.resizable(False, False)
+    settings_window.geometry("600x300")
+
+    settings_window.columnconfigure(0, weight=1)
+    settings_window.columnconfigure(1, weight=3)
+
+    for i in range(6):
+        settings_window.rowconfigure({i})
+        
+
+    settings_title_label = Label(settings_window, text="Settings", background="orange",font=('Arial','30','bold'), foreground="black")
+    settings_title_label.grid(row=0, column=0, sticky='nsew', columnspan=2)
+
+    comport_set_label = Label(settings_window, text="COM PORT: ", background="black",font=('Arial','15','bold'), foreground="white")
+    comport_set_label.grid(row=2, column=0, sticky="w", pady=20, padx=20)
+
+    settings_password_label = Label(settings_window, text="Password: ",font=('Arial','15','bold'), background="black", foreground="white")
+    settings_password_label.grid(row=4, column=0, sticky="w", pady=20, padx=20)
+
+    settings_password_input = Entry(settings_window, width=11, show="*")
+    settings_password_input.grid(row=4, column=0, sticky="e")
+
+    settings_apply_button = Button(settings_window, text="Apply", width=5, height=1, font=('Arial','12','bold'), background='light blue', foreground='black')
+    settings_apply_button.grid(row=6, column=1, sticky="w", padx=20)
+
+    com_drop_options_list = ["select", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", 
+                   "COM7", "COM8", "COM9","COM10"]
+    com_drop_clicked = StringVar()
+    selected_value = com_drop_clicked.get()
+
+    com_drop_clicked.set(com_drop_options_list[0])
+    com_dropdown = OptionMenu(settings_window, com_drop_clicked, *com_drop_options_list)
+
+    com_dropdown.configure(background='light blue', highlightthickness=0)
+    com_dropdown.grid(row=2, column=0, sticky="e")
+    print(selected_value) 
+
 def open_graph_window(tempVal, graph_name):
     plt.style.use('dark_background')
     graph_window = Toplevel(root)
@@ -257,6 +298,11 @@ frame4 = Frame(root)
 frame4 = Frame(root)
 frame4.grid(row=10, column=3, pady=10)
 QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT5Temp, graph_name="QT5 GRAPH")).grid(row=0, column=0)
+
+#add settings button
+settings_frame = Frame(root)
+settings_frame.grid(row=11, column=2)
+settings_button = Button(settings_frame, text="SETTINGS", width=10, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_settings_window()).pack(expand=True)
  
 def readTemperature(client):
     while True: 
