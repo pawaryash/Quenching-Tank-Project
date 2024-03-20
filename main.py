@@ -1,7 +1,5 @@
 '''
-    Format the graph window
-    changed color scheme of graph window
-
+    Added settings button
 '''
 import pyodbc
 from tkinter import *
@@ -33,8 +31,8 @@ qT5Temp = None
 conn_str = (
     "Driver={ODBC Driver 17 for SQL Server};"
     "Server=10.7.228.186;" #Add host IP to which SQL Server is connected here
-    "Port=1433;"  # Replace with your host machine's IP
-    "Database=QuenchTank;"
+    "Port=1433;"  # add the port no. to which sql server listens
+    "Database=QuenchTank;"  #database name
     "UID=jack;"  # Replace with your SQL Server username
     "PWD=jack123;"  # Replace with your SQL Server password
 )
