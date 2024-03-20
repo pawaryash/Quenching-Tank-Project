@@ -1,6 +1,6 @@
-''' 
-Added memory  optimization as the matplotlib plots were not closing upon closing the graph 
-window. They remained open in the background taking memory space.
+'''
+    Format the graph window
+    changed color scheme of graph window
 
 '''
 import pyodbc
@@ -40,8 +40,6 @@ conn_str = (
     "UID=jack;"  # Replace with your SQL Server username
     "PWD=jack123;"  # Replace with your SQL Server password
 )
-
-
     
 def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
     try:
@@ -66,13 +64,15 @@ def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
         database_connection_label.configure(text="Database Connection: DISCONNECTED", foreground='red')
 
 def open_graph_window(tempVal, graph_name):
-
+    plt.style.use('dark_background')
     graph_window = Toplevel(root)
+    graph_window.resizable(False, False)
     graph_window.title(graph_name)
 
     #Initialize Tkinter and Matplotlib Figure
     fig_graph, axis_graph = plt.subplots()
 
+    #the x and y values will be stored in the following
     x_vals = []
     y_vals = []
 
@@ -88,7 +88,7 @@ def open_graph_window(tempVal, graph_name):
 
         #clear axis
         plt.cla()
-        axis_graph.plot(x_vals, y_vals)
+        axis_graph.plot(x_vals, y_vals, color='orange', linewidth=2)
 
         if len(x_vals) > 10:
             axis_graph.set_xlim(left=x_vals[-10], right=x_vals[-1])
@@ -97,7 +97,7 @@ def open_graph_window(tempVal, graph_name):
             axis_graph.set_ylim([0, max(y_vals) + 10])
         else:
             axis_graph.set_xlim([0, 10])
-        axis_graph.set_xlabel('TIME')
+        axis_graph.set_xlabel('DATE & TIME')
         axis_graph.set_ylabel('TEMP IN °C')
         #axis_graph.plot(x_vals,y_vals)
 
@@ -111,14 +111,15 @@ def open_graph_window(tempVal, graph_name):
         # Add padding to the y-axis
         plt.margins(y=0.2)  
 
+    #call to animate function
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
 
     #Tkinter Application Window
     frame = Frame(graph_window)
-    frame.grid()  # Use grid for frame
+    frame.grid(sticky='ew')  # Use grid for frame
 
-    label = Label(frame, text = graph_name, font=('Arial','32','bold'))  # Add label to frame
-    label.grid()  # Use grid for label
+    label = Label(frame, text = graph_name, font=('Arial','32','bold'), background="orange", foreground="black")  # Add label to frame
+    label.pack(fill='both', expand=True)  # Use grid for label
 
     #create canvas
     canvas = FigureCanvasTkAgg(fig_graph, master=graph_window)
@@ -128,13 +129,20 @@ def open_graph_window(tempVal, graph_name):
     plt.subplots_adjust(bottom=0.3)
 
     #Create Toolbar
+    # Create custom toolbar
+    class CustomToolbar(NavigationToolbar2Tk):
+        def set_message(self, s):
+            s = s.replace('x', 'Date & Time').replace('y', 'Temp in °C')
+            super().set_message(s)
+    # Create toolbar frame 
     toolbar_frame = Frame(graph_window)
     toolbar_frame.grid()  # Use grid for toolbar_frame
-
-    toolbar = NavigationToolbar2Tk(canvas, toolbar_frame)
+    
+    # Create custom toolbar
+    toolbar = CustomToolbar(canvas, toolbar_frame)
     toolbar.update()
-    toolbar.pack()  # Use pack for toolbar
-
+    toolbar.grid(sticky='w')
+     
     canvas.draw()
 
     def close_graph_window():
@@ -143,8 +151,6 @@ def open_graph_window(tempVal, graph_name):
     graph_window.protocol("WM_DELETE_WINDOW", close_graph_window)
 
     graph_window.mainloop()
-
-
 
 root = Tk()
 root.configure(background="black")
@@ -184,7 +190,6 @@ credits_label = Label(root, text="Developed By: YASH PAWAR", font=('Arial Bold I
 
 #Mentor label
 mentor_label = Label(root, text="Guided By: SUNIL SINGH", font=('Arial Bold Italic','9'),foreground="white", background="black")
-
 
 #grid definition
 
@@ -242,23 +247,19 @@ frame1 = Frame(root)
 frame1.grid(row=5, column=1, pady=10)
 QT2_Graph = Button(frame1, text="QT2 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT2Temp,graph_name="QT2 GRAPH")).grid(row=0, column=0)
 
-
 frame2 = Frame(root)
 frame2.grid(row=5, column=3, pady=10)
 QT3_Graph = Button(frame2, text="QT3 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT3Temp, graph_name="QT3 GRAPH")).grid(row=0, column=0)
 
-
 frame3 = Frame(root)
 frame3.grid(row=10, column=1, pady=10)
 QT4_Graph = Button(frame3, text="QT4 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT4Temp, graph_name="QT4 GRAPH")).grid(row=0, column=0)
-
 
 frame4 = Frame(root)
 frame4 = Frame(root)
 frame4.grid(row=10, column=3, pady=10)
 QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT5Temp, graph_name="QT5 GRAPH")).grid(row=0, column=0)
  
-
 def readTemperature(client):
     while True: 
         global qT2Temp
