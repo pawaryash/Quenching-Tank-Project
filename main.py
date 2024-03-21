@@ -1,7 +1,9 @@
 '''
-    Added settings button
+    Configured password validation
+    update of COM port from the created settings.json file
 
 '''
+from turtle import back
 import pyodbc
 from tkinter import *
 import time
@@ -21,7 +23,14 @@ from matplotlib.dates import DateFormatter
 
 from datetime import timedelta
 
-#GLOBAL VARIABLES DECLARATION
+#for reading saved COM port
+import json
+from tkinter import messagebox
+
+
+#GLOBAL VARIABLES 
+global settings_password
+settings_password  = "mypassword"
 qT2Temp = None
 qT3Temp = None
 qT4Temp = None 
@@ -60,6 +69,16 @@ def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
         print(e)
         database_connection_label.configure(text="Database Connection: DISCONNECTED", foreground='red')
 
+def get_saved_com_port():
+    try: 
+        with open('settings.json','r') as json_file:
+            settings = json.load(json_file)
+            #print(settings)
+            return settings.get('ComPort','COM1')
+            
+    except FileNotFoundError:
+            messagebox.showinfo("Settings not found", "Please select the COM port manually.")
+            return 
 def create_settings_window():
     settings_window = Toplevel(root)
     settings_window.configure(background="black")
@@ -70,10 +89,10 @@ def create_settings_window():
     settings_window.columnconfigure(0, weight=1)
     settings_window.columnconfigure(1, weight=3)
 
-    for i in range(6):
+    for i in range(7):
         settings_window.rowconfigure({i})
         
-
+    #Settings window heading
     settings_title_label = Label(settings_window, text="Settings", background="orange",font=('Arial','30','bold'), foreground="black")
     settings_title_label.grid(row=0, column=0, sticky='nsew', columnspan=2)
 
@@ -85,22 +104,38 @@ def create_settings_window():
 
     settings_password_input = Entry(settings_window, width=11, show="*")
     settings_password_input.grid(row=4, column=0, sticky="e")
-
-    settings_apply_button = Button(settings_window, text="Apply", width=5, height=1, font=('Arial','12','bold'), background='light blue', foreground='black')
-    settings_apply_button.grid(row=6, column=1, sticky="w", padx=20)
+    
+    #Inavlid password label
+    
+    invalid_password_label = Label(settings_window, text="", background="black")
+    invalid_password_label.grid(row=6, column=0, sticky="w", padx=20)
 
     com_drop_options_list = ["select", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", 
                    "COM7", "COM8", "COM9","COM10"]
     com_drop_clicked = StringVar()
-    selected_value = com_drop_clicked.get()
+
+    settings_apply_button = Button(settings_window, text="Apply", font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: apply_settings(settings_password_input.get(), invalid_password_label, com_drop_clicked))
+    settings_apply_button.grid(row=6, column=1, sticky="w", padx=20)
+    #selected_com_port = com_drop_clicked.get() #access the selected com port value using this
 
     com_drop_clicked.set(com_drop_options_list[0])
     com_dropdown = OptionMenu(settings_window, com_drop_clicked, *com_drop_options_list)
 
     com_dropdown.configure(background='light blue', highlightthickness=0)
     com_dropdown.grid(row=2, column=0, sticky="e")
-    print(selected_value) 
 
+def apply_settings(password, invalid_password_label, com_drop_clicked):
+        if password != settings_password:
+            invalid_password_label.config(text="Invalid Password!", font=('Arial','12','bold'), foreground="red", background="white")
+            return
+        else:
+            selected_com_port = com_drop_clicked.get()
+            invalid_password_label.config(text="Settings Applied", font=('Arial','12','bold'), foreground="green", background="white")
+            with open('settings.json', 'w') as json_file:
+                json.dump({'ComPort': selected_com_port}, json_file)
+                update_modbus_config_label(selected_com_port)
+                #print(selected_com_port)
+            
 def open_graph_window(tempVal, graph_name):
     plt.style.use('dark_background')
     graph_window = Toplevel(root)
@@ -131,10 +166,12 @@ def open_graph_window(tempVal, graph_name):
         if len(x_vals) > 10:
             axis_graph.set_xlim(left=x_vals[-10], right=x_vals[-1])
         axis_graph.set_title('REAL TIME TREND')
+
         if y_vals:
             axis_graph.set_ylim([0, max(y_vals) + 10])
         else:
             axis_graph.set_xlim([0, 10])
+
         axis_graph.set_xlabel('DATE & TIME')
         axis_graph.set_ylabel('TEMP IN °C')
         #axis_graph.plot(x_vals,y_vals)
@@ -215,7 +252,13 @@ QT4_Modbus_COM_port_label = Label(root, text="SLAVE ID: 3", font=('Arial','12','
 QT5_Modbus_COM_port_label = Label(root, text="SLAVE ID: 4", font=('Arial','12','bold'), foreground="black")
 
 #MODBUS Configuration
-modbus_config_label = Label(root, text="METHOD = RTU / STOPBITS = 1 / DATA BITS = 8 / PARITY = NONE / BAUDRATE=9600", font=('Arial bold italic', '9'), foreground="white", background="black")
+def update_modbus_config_label(com_port):
+    modbus_config_label = Label(root, text=f"METHOD = RTU / STOPBITS = 1 / DATA BITS = 8 / PARITY = NONE / BAUDRATE=9600 /{com_port}", font=('Arial bold italic', '9'), foreground="white", background="black")
+    modbus_config_label.grid(row=13, column=1, sticky="w",columnspan=3)
+
+# Initially create the label without com_port
+modbus_config_label = Label(root,text=f"METHOD = RTU / STOPBITS = 1 / DATA BITS = 8 / PARITY = NONE / BAUDRATE=9600 /", font=('Arial bold italic', '9'), foreground="white", background="black")
+modbus_config_label.grid(row=13, column=1, sticky="w",columnspan=3)
 
 #MOXA Connetion Label
 moxa_connection_label= Label(root, font=('Arial Bold Italic', '9'), foreground="white", background="black")
@@ -231,7 +274,7 @@ mentor_label = Label(root, text="Guided By: SUNIL SINGH", font=('Arial Bold Ital
 
 #grid definition
 
-#configuring the number of colums
+#configuring the number of columns
 root.columnconfigure(0, weight = 1)
 root.columnconfigure(1, weight = 2)
 root.columnconfigure(2, weight = 1) 
@@ -269,9 +312,6 @@ database_connection_label.grid(row=11, column=1, columnspan=3, sticky="w")
 
 #place MOXA Connection Label
 moxa_connection_label.grid(row=12, column=1, sticky="w",columnspan=3)
-
-#place the modbus config label
-modbus_config_label.grid(row=13, column=1, sticky="w",columnspan=3)
 
 #place the credits label
 credits_label.grid(row=12, column=3, sticky ='e')
@@ -376,7 +416,11 @@ def readTemperature(client):
 
 #main loop of the program
 def main():
-    client = ModbusClient(method = 'rtu', port='COM4', stopbits = 1, bytesize = 8, parity = 'N' , baudrate= 9600)
+    
+    com_port = get_saved_com_port()
+    update_modbus_config_label(com_port)
+
+    client = ModbusClient(method = 'rtu', port=com_port, stopbits = 1, bytesize = 8, parity = 'N' , baudrate= 9600)
     threading.Thread(target=readTemperature, args=(client,)).start()
 
 if __name__ == "__main__":
