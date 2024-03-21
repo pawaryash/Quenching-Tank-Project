@@ -1,6 +1,6 @@
 '''
-    Configured password validation
-    update of COM port from the created settings.json file
+    Added functionality of reading the available comports and 
+    appending it to the dropdown in settings menu.
 
 '''
 from turtle import back
@@ -27,6 +27,8 @@ from datetime import timedelta
 import json
 from tkinter import messagebox
 
+#for accessing the system available COM ports
+import serial.tools.list_ports
 
 #GLOBAL VARIABLES 
 global settings_password
@@ -75,10 +77,18 @@ def get_saved_com_port():
             settings = json.load(json_file)
             #print(settings)
             return settings.get('ComPort','COM1')
-            
+        
     except FileNotFoundError:
             messagebox.showinfo("Settings not found", "Please select the COM port manually.")
-            return 
+            return ""
+
+def get_available_comports():
+    ports = serial.tools.list_ports.comports()
+    available_ports = [port.device for port in ports]
+    return available_ports
+
+print(get_available_comports()) 
+
 def create_settings_window():
     settings_window = Toplevel(root)
     settings_window.configure(background="black")
@@ -110,8 +120,9 @@ def create_settings_window():
     invalid_password_label = Label(settings_window, text="", background="black")
     invalid_password_label.grid(row=6, column=0, sticky="w", padx=20)
 
-    com_drop_options_list = ["select", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", 
-                   "COM7", "COM8", "COM9","COM10"]
+    #Read the available COM Ports from system
+    com_drop_options_list = get_available_comports()
+    
     com_drop_clicked = StringVar()
 
     settings_apply_button = Button(settings_window, text="Apply", font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: apply_settings(settings_password_input.get(), invalid_password_label, com_drop_clicked))
