@@ -1,7 +1,5 @@
 '''
-    Added functionality of reading the available comports and 
-    appending it to the dropdown in settings menu.
-
+    Make this main
 '''
 from turtle import back
 import pyodbc
@@ -87,8 +85,6 @@ def get_available_comports():
     available_ports = [port.device for port in ports]
     return available_ports
 
-print(get_available_comports()) 
-
 def create_settings_window():
     settings_window = Toplevel(root)
     settings_window.configure(background="black")
@@ -115,7 +111,7 @@ def create_settings_window():
     settings_password_input = Entry(settings_window, width=11, show="*")
     settings_password_input.grid(row=4, column=0, sticky="e")
     
-    #Inavlid password label
+    #Invalid password label
     
     invalid_password_label = Label(settings_window, text="", background="black")
     invalid_password_label.grid(row=6, column=0, sticky="w", padx=20)
@@ -157,9 +153,10 @@ def open_graph_window(tempVal, graph_name):
     fig_graph, axis_graph = plt.subplots()
 
     #the x and y values will be stored in the following
+    # global x_vals, y_vals
     x_vals = []
     y_vals = []
-
+    
     def animate(i):
         conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
@@ -195,7 +192,9 @@ def open_graph_window(tempVal, graph_name):
             label.set_fontsize(8)
 
         # Add padding to the y-axis
-        plt.margins(y=0.2)  
+        plt.margins(y=0.2) 
+        conn.commit()
+        conn.close() 
 
     #call to animate function
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
@@ -237,6 +236,7 @@ def open_graph_window(tempVal, graph_name):
     graph_window.protocol("WM_DELETE_WINDOW", close_graph_window)
 
     graph_window.mainloop()
+    
 
 root = Tk()
 root.configure(background="black")
@@ -354,7 +354,7 @@ settings_frame = Frame(root)
 settings_frame.grid(row=11, column=2)
 settings_button = Button(settings_frame, text="SETTINGS", width=10, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_settings_window()).pack(expand=True)
  
-def readTemperature(client):
+def readTemperature(modbus_client):
     while True: 
         global qT2Temp
         global qT3Temp
@@ -365,14 +365,14 @@ def readTemperature(client):
 
         try:
             #print("Connecting to the server...")
-            connection = client.connect()
+            connection = modbus_client.connect()
             if(connection==True):
                 moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.186"), foreground="Green")
             
                 #Quench Tank 2 Temperature
                 #Quench Tank 3 Temperature
                 try:
-                    inpReg2 = client.read_input_registers(0x06,1,unit=2)
+                    inpReg2 = modbus_client.read_input_registers(0x06,1,unit=2)
                     qT2Temp = (inpReg2.registers[0]/10)
                     QT2_temp_label.config(text=str(qT2Temp)+"°C",background="blue",font=('Arial','50','bold'))
                 except Exception as e:
@@ -381,7 +381,7 @@ def readTemperature(client):
                 
                 #Quench Tank 3 Temperature
                 try:
-                    inpReg3 = client.read_input_registers(0x06,1,unit=3)
+                    inpReg3 = modbus_client.read_input_registers(0x06,1,unit=3)
                     qT3Temp = (inpReg3.registers[0]/10)
                     QT3_temp_label.config(text=str(qT3Temp)+"°C",background="blue",font=('Arial','50','bold'))
                 except Exception as e:
@@ -390,7 +390,7 @@ def readTemperature(client):
                 
                 #Quench Tank 4 Temperature
                 try:
-                    inpReg4 = client.read_input_registers(0x06,1,unit=4)
+                    inpReg4 = modbus_client.read_input_registers(0x06,1,unit=4)
                     qT4Temp = (inpReg4.registers[0]/10)
                     QT4_temp_label.config(text=str(qT4Temp)+"°C",background="blue",font=('Arial','50','bold'))
                 except Exception as e:
@@ -399,21 +399,19 @@ def readTemperature(client):
                 
                 #Quench Tank 5 Temperature
                 try:
-                    inpReg5 = client.read_input_registers(0x06,1,unit=5)
+                    inpReg5 = modbus_client.read_input_registers(0x06,1,unit=5)
                     qT5Temp = (inpReg5.registers[0]/10)
                     QT5_temp_label.config(text=str(qT5Temp)+"°C",background="blue",font=('Arial','50','bold'))
                 except Exception as e:
                     qT5Temp=0
                     QT5_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-                
-                #dump to SQL
+
                 insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qt5Temp)
-                
-                #close the connection
-                client.close()
+                #close the modbus connection
+                modbus_client.close()
                 root.update()
                 time.sleep(2)
-                insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qt5Temp)
+                
             else:
                 QT2_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
@@ -431,8 +429,8 @@ def main():
     com_port = get_saved_com_port()
     update_modbus_config_label(com_port)
 
-    client = ModbusClient(method = 'rtu', port=com_port, stopbits = 1, bytesize = 8, parity = 'N' , baudrate= 9600)
-    threading.Thread(target=readTemperature, args=(client,)).start()
+    modbus_client = ModbusClient(method = 'rtu', port=com_port, stopbits = 1, bytesize = 8, parity = 'N' , baudrate= 9600)
+    threading.Thread(target=readTemperature, args=(modbus_client,)).start()
 
 if __name__ == "__main__":
     main()
