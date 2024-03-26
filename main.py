@@ -1,5 +1,8 @@
 '''
-    Make this main
+    Implemented multithreading of the 
+    readTemperature and dump_to_db functions 
+    using a shared thread safe variable(Queue) for
+    qT Temp values  
 '''
 from turtle import back
 import pyodbc
@@ -28,9 +31,16 @@ from tkinter import messagebox
 #for accessing the system available COM ports
 import serial.tools.list_ports
 
+#For temp queue
+from queue import Queue
+
 #GLOBAL VARIABLES 
 global settings_password
 settings_password  = "mypassword"
+
+global tempQueue
+tempQueue = Queue()
+
 qT2Temp = None
 qT3Temp = None
 qT4Temp = None 
@@ -49,7 +59,7 @@ conn_str = (
     
 def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
     try:
-        conn = pyodbc.connect(conn_str)
+        conn = pyodbc.connect(conn_str, timeout=5)
         database_connection_label.configure(text="Database Connection: CONNECTED", foreground='green')
         cursor = conn.cursor()
 
@@ -158,9 +168,12 @@ def open_graph_window(tempVal, graph_name):
     y_vals = []
     
     def animate(i):
-        conn = pyodbc.connect(conn_str)
-        cursor = conn.cursor()
-        cursor.execute("SELECT CURRENT_TIMESTAMP")
+        try:
+            conn = pyodbc.connect(conn_str, timeout=5)
+            cursor = conn.cursor()
+            cursor.execute("SELECT CURRENT_TIMESTAMP")
+        except Exception as e:
+            messagebox.showinfo("Database not connected."," Unable to fetch server date and time")
         row = cursor.fetchone()
 
         if row and tempVal is not None:
@@ -236,7 +249,82 @@ def open_graph_window(tempVal, graph_name):
     graph_window.protocol("WM_DELETE_WINDOW", close_graph_window)
 
     graph_window.mainloop()
-    
+
+def readTemperature(modbus_client):
+    global qT2Temp
+    global qT3Temp
+    global qT4Temp
+    global qT5Temp
+    qT2Temp = qT3Temp = qT4Temp = qT5Temp = None
+    global tempQueue
+    while True: 
+        try:
+            #print("Connecting to the server...")
+            connection = modbus_client.connect()
+            if(connection==True):
+                moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.186"), foreground="Green")
+            
+                #Quench Tank 2 Temperature
+                try:
+                    inpReg2 = modbus_client.read_input_registers(0x06,1,unit=2)
+                    qT2Temp = (inpReg2.registers[0]/10)
+                    QT2_temp_label.config(text=str(qT2Temp)+"°C",background="blue",font=('Arial','50','bold'))
+                except Exception as e:
+                    qT2Temp=0
+                    QT2_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
+                
+                #Quench Tank 3 Temperature
+                try:
+                    inpReg3 = modbus_client.read_input_registers(0x06,1,unit=3)
+                    qT3Temp = (inpReg3.registers[0]/10)
+                    QT3_temp_label.config(text=str(qT3Temp)+"°C",background="blue",font=('Arial','50','bold'))
+                except Exception as e:
+                    qT3Temp=0
+                    QT3_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
+                
+                #Quench Tank 4 Temperature
+                try:
+                    inpReg4 = modbus_client.read_input_registers(0x06,1,unit=4)
+                    qT4Temp = (inpReg4.registers[0]/10)
+                    QT4_temp_label.config(text=str(qT4Temp)+"°C",background="blue",font=('Arial','50','bold'))
+                except Exception as e:
+                    qT4Temp=0
+                    QT4_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
+                
+                #Quench Tank 5 Temperature
+                try:
+                    inpReg5 = modbus_client.read_input_registers(0x06,1,unit=5)
+                    qT5Temp = (inpReg5.registers[0]/10)
+                    QT5_temp_label.config(text=str(qT5Temp)+"°C",background="blue",font=('Arial','50','bold'))
+                except Exception as e:
+                    qT5Temp=0
+                    QT5_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
+
+                tempQueue.put((qT2Temp, qT3Temp, qT4Temp, qT5Temp))
+                #close the modbus connection
+                modbus_client.close()
+                root.update()
+                time.sleep(2)
+                
+            else:
+                QT2_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
+                QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
+                QT4_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
+                QT5_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
+                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red"))
+        except Exception as e:
+            #raise this exception if the DP 9 Connecter is disconnected from MOXA.(Failed to read the registers)
+            #print(e)
+            time.sleep(2)  # Wait before trying to reconnect
+
+def dump_to_db():
+    # Initialize the temperature variables
+    global tempQueue
+    while True:
+        qT2Temp, qT3Temp, qT4Temp, qT5Temp = tempQueue.get()
+        print(f"{qT2Temp},{qT3Temp},{qT4Temp},{qT5Temp}")
+        insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qT5Temp)
+        time.sleep(5)
 
 root = Tk()
 root.configure(background="black")
@@ -354,75 +442,6 @@ settings_frame = Frame(root)
 settings_frame.grid(row=11, column=2)
 settings_button = Button(settings_frame, text="SETTINGS", width=10, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: create_settings_window()).pack(expand=True)
  
-def readTemperature(modbus_client):
-    while True: 
-        global qT2Temp
-        global qT3Temp
-        global qT4Temp
-        global qT5Temp
-
-        qT2Temp = qT3Temp = qT4Temp = qt5Temp = None  # Initialize the temperature variables
-
-        try:
-            #print("Connecting to the server...")
-            connection = modbus_client.connect()
-            if(connection==True):
-                moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.186"), foreground="Green")
-            
-                #Quench Tank 2 Temperature
-                #Quench Tank 3 Temperature
-                try:
-                    inpReg2 = modbus_client.read_input_registers(0x06,1,unit=2)
-                    qT2Temp = (inpReg2.registers[0]/10)
-                    QT2_temp_label.config(text=str(qT2Temp)+"°C",background="blue",font=('Arial','50','bold'))
-                except Exception as e:
-                    qT2Temp=0
-                    QT2_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-                
-                #Quench Tank 3 Temperature
-                try:
-                    inpReg3 = modbus_client.read_input_registers(0x06,1,unit=3)
-                    qT3Temp = (inpReg3.registers[0]/10)
-                    QT3_temp_label.config(text=str(qT3Temp)+"°C",background="blue",font=('Arial','50','bold'))
-                except Exception as e:
-                    qT3Temp=0
-                    QT3_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-                
-                #Quench Tank 4 Temperature
-                try:
-                    inpReg4 = modbus_client.read_input_registers(0x06,1,unit=4)
-                    qT4Temp = (inpReg4.registers[0]/10)
-                    QT4_temp_label.config(text=str(qT4Temp)+"°C",background="blue",font=('Arial','50','bold'))
-                except Exception as e:
-                    qT4Temp=0
-                    QT4_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-                
-                #Quench Tank 5 Temperature
-                try:
-                    inpReg5 = modbus_client.read_input_registers(0x06,1,unit=5)
-                    qT5Temp = (inpReg5.registers[0]/10)
-                    QT5_temp_label.config(text=str(qT5Temp)+"°C",background="blue",font=('Arial','50','bold'))
-                except Exception as e:
-                    qT5Temp=0
-                    QT5_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-
-                insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qt5Temp)
-                #close the modbus connection
-                modbus_client.close()
-                root.update()
-                time.sleep(2)
-                
-            else:
-                QT2_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                QT4_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                QT5_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red"))
-        except Exception as e:
-            #raise this exception if the DP 9 Connecter is disconnected from MOXA.(Failed to read the registers)
-            #print(e)
-            time.sleep(2)  # Wait before trying to reconnect
-
 #main loop of the program
 def main():
     
@@ -430,7 +449,11 @@ def main():
     update_modbus_config_label(com_port)
 
     modbus_client = ModbusClient(method = 'rtu', port=com_port, stopbits = 1, bytesize = 8, parity = 'N' , baudrate= 9600)
-    threading.Thread(target=readTemperature, args=(modbus_client,)).start()
+    read_temp_thread = threading.Thread(target=readTemperature, args=(modbus_client,))
+    read_temp_thread.start()
+
+    dump_to_db_thread = threading.Thread(target=dump_to_db)
+    dump_to_db_thread.start()
 
 if __name__ == "__main__":
     main()
