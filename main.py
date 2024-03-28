@@ -1,8 +1,6 @@
 '''
-    Implemented multithreading of the 
-    readTemperature and dump_to_db functions 
-    using a shared thread safe variable(Queue) for
-    qT Temp values  
+    Changing the tkinter LOGO and Package Icon
+
 '''
 from turtle import back
 import pyodbc
@@ -158,7 +156,7 @@ def open_graph_window(tempVal, graph_name):
     graph_window = Toplevel(root)
     graph_window.resizable(False, False)
     graph_window.title(graph_name)
-
+    graph_window.iconbitmap('Images\QTTMS logo.ico')
     #Initialize Tkinter and Matplotlib Figure
     fig_graph, axis_graph = plt.subplots()
 
@@ -330,6 +328,7 @@ root = Tk()
 root.configure(background="black")
 root.title("Quenching Tank Temperature Monitoring")
 root.geometry("1280x720")
+root.iconbitmap('Images\QTTMS logo.ico')
 
 #display label
 heading_label = Label(root, text="QUENCHING TANK TEMPERATURE MONITORING", background="orange", font=('Arial','30','bold'), foreground="black")
