@@ -260,7 +260,7 @@ def readTemperature(modbus_client):
             #print("Connecting to the server...")
             connection = modbus_client.connect()
             if(connection==True):
-                moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.186"), foreground="Green")
+                moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.187"), foreground="Green")
             
                 #Quench Tank 2 Temperature
                 try:
@@ -309,7 +309,7 @@ def readTemperature(modbus_client):
                 QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT4_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT5_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red"))
+                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.187"),foreground="red"))
         except Exception as e:
             #raise this exception if the DP 9 Connecter is disconnected from MOXA.(Failed to read the registers)
             #print(e)
