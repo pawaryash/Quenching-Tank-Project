@@ -99,6 +99,7 @@ def create_settings_window():
     settings_window.title("Settings")
     settings_window.resizable(False, False)
     settings_window.geometry("600x300")
+    settings_window.iconbitmap('Images\QTTMS logo.ico')
 
     settings_window.columnconfigure(0, weight=1)
     settings_window.columnconfigure(1, weight=3)
