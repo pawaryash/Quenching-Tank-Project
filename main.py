@@ -1,6 +1,8 @@
 '''
-    Changing the tkinter LOGO and Package Icon
-
+    Implemented multithreading of the 
+    readTemperature and dump_to_db functions 
+    using a shared thread safe variable(Queue) for
+    qT Temp values  
 '''
 from turtle import back
 import pyodbc
@@ -99,7 +101,6 @@ def create_settings_window():
     settings_window.title("Settings")
     settings_window.resizable(False, False)
     settings_window.geometry("600x300")
-    settings_window.iconbitmap('Images\QTTMS logo.ico')
 
     settings_window.columnconfigure(0, weight=1)
     settings_window.columnconfigure(1, weight=3)
@@ -157,7 +158,7 @@ def open_graph_window(tempVal, graph_name):
     graph_window = Toplevel(root)
     graph_window.resizable(False, False)
     graph_window.title(graph_name)
-    graph_window.iconbitmap('Images\QTTMS logo.ico')
+
     #Initialize Tkinter and Matplotlib Figure
     fig_graph, axis_graph = plt.subplots()
 
@@ -261,7 +262,7 @@ def readTemperature(modbus_client):
             #print("Connecting to the server...")
             connection = modbus_client.connect()
             if(connection==True):
-                moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.187"), foreground="Green")
+                moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.186"), foreground="Green")
             
                 #Quench Tank 2 Temperature
                 try:
@@ -310,7 +311,7 @@ def readTemperature(modbus_client):
                 QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT4_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
                 QT5_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.187"),foreground="red"))
+                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red"))
         except Exception as e:
             #raise this exception if the DP 9 Connecter is disconnected from MOXA.(Failed to read the registers)
             #print(e)
@@ -329,7 +330,6 @@ root = Tk()
 root.configure(background="black")
 root.title("Quenching Tank Temperature Monitoring")
 root.geometry("1280x720")
-root.iconbitmap('Images\QTTMS logo.ico')
 
 #display label
 heading_label = Label(root, text="QUENCHING TANK TEMPERATURE MONITORING", background="orange", font=('Arial','30','bold'), foreground="black")
