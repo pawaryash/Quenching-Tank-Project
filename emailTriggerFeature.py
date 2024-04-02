@@ -1,7 +1,9 @@
 '''
-    Live Graph issue solved
+    Email trigger for MOXA disconnection
+
 '''
 from turtle import back
+from pandas import Timestamp
 import pyodbc
 from tkinter import *
 import time
@@ -31,6 +33,18 @@ import serial.tools.list_ports
 #For temp queue
 from queue import Queue
 
+#email triggering dependencies
+from email.message import EmailMessage
+from multiprocessing import context
+from password import mypassword
+import ssl
+import smtplib
+
+email_sender = "practicemail410@gmail.com"
+email_password = mypassword
+email_receiver = "pyash632002@gmail.com"
+email_sent = False #email flag
+
 #GLOBAL VARIABLES 
 global settings_password
 settings_password  = "mypassword"
@@ -42,17 +56,6 @@ qT2Temp = None
 qT3Temp = None
 qT4Temp = None 
 qT5Temp = None  
-
-global qT2TempQueue 
-global qT3TempQueue 
-global qT4TempQueue 
-global qT5TempQueue 
-
-qT2TempQueue = Queue()
-qT3TempQueue = Queue()
-qT4TempQueue = Queue()
-qT5TempQueue = Queue()
-
 
 #dump to SQL Database
 #connection string
@@ -161,109 +164,12 @@ def apply_settings(password, invalid_password_label, com_drop_clicked):
                 update_modbus_config_label(selected_com_port)
                 #print(selected_com_port)
             
-
-def readTemperature(modbus_client):
-    global qT2Temp
-    global qT3Temp
-    global qT4Temp
-    global qT5Temp
-    qT2Temp = qT3Temp = qT4Temp = qT5Temp = None
-    global tempQueue
-    global qT2TempQueue 
-    global qT3TempQueue 
-    global qT4TempQueue 
-    global qT5TempQueue 
-    while True: 
-        try:
-            #print("Connecting to the server...")
-            connection = modbus_client.connect()
-            if(connection==True):
-                moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.186"), foreground="Green")
-            
-                #Quench Tank 2 Temperature
-                try:
-                    inpReg2 = modbus_client.read_input_registers(0x06,1,unit=2)
-                    qT2Temp = (inpReg2.registers[0]/10)
-                    QT2_temp_label.config(text=str(qT2Temp)+"°C",background="blue",font=('Arial','50','bold'))
-                    qT2TempQueue.put(qT2Temp)
-                except Exception as e:
-                    qT2Temp=0
-                    QT2_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-                    qT2TempQueue.put(qT2Temp)
-                
-                #Quench Tank 3 Temperature
-                try:
-                    inpReg3 = modbus_client.read_input_registers(0x06,1,unit=3)
-                    qT3Temp = (inpReg3.registers[0]/10)
-                    QT3_temp_label.config(text=str(qT3Temp)+"°C",background="blue",font=('Arial','50','bold'))
-                    qT3TempQueue.put(qT3Temp)
-                except Exception as e:
-                    qT3Temp=0
-                    QT3_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-                    qT3TempQueue.put(qT3Temp)
-                
-                #Quench Tank 4 Temperature
-                try:
-                    inpReg4 = modbus_client.read_input_registers(0x06,1,unit=4)
-                    qT4Temp = (inpReg4.registers[0]/10)
-                    QT4_temp_label.config(text=str(qT4Temp)+"°C",background="blue",font=('Arial','50','bold'))
-                    qT4TempQueue.put(qT4Temp)
-                except Exception as e:
-                    qT4Temp=0
-                    QT4_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-                    qT4TempQueue.put(qT4Temp)
-                
-                #Quench Tank 5 Temperature
-                try:
-                    inpReg5 = modbus_client.read_input_registers(0x06,1,unit=5)
-                    qT5Temp = (inpReg5.registers[0]/10)
-                    QT5_temp_label.config(text=str(qT5Temp)+"°C",background="blue",font=('Arial','50','bold'))
-                    qT5TempQueue.put(qT5Temp)
-                except Exception as e:
-                    qT5Temp=0
-                    QT5_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-                    qT5TempQueue.put(qT5Temp)
-
-                tempQueue.put((qT2Temp, qT3Temp, qT4Temp, qT5Temp))
-                #close the modbus connection
-                modbus_client.close()
-                root.update()
-                time.sleep(2)
-                
-            else:
-                QT2_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                QT4_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                QT5_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
-                raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red"))
-        except Exception as e:
-            #raise this exception if the DP 9 Connecter is disconnected from MOXA.(Failed to read the registers)
-            #print(e)
-            time.sleep(2)  # Wait before trying to reconnect
-
-def dump_to_db():
-    # Initialize the temperature variables
-    global tempQueue
-    global qt2_graph_temp, qt3_graph_temp, qt4_graph_temp, qt5_graph_temp
-    while True:
-        qT2Temp, qT3Temp, qT4Temp, qT5Temp = tempQueue.get()
-
-        qt2_graph_temp = qT2Temp
-        qt3_graph_temp = qT3Temp
-        qt4_graph_temp = qT4Temp
-        qt5_graph_temp = qT5Temp
-        
-        print(f"{qT2Temp},{qT3Temp},{qT4Temp},{qT5Temp}")
-        insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qT5Temp)
-        time.sleep(5)
-
-def open_graph_window(tempQueue, graph_name):
-    
+def open_graph_window(tempVal, graph_name):
     plt.style.use('dark_background')
     graph_window = Toplevel(root)
     graph_window.resizable(False, False)
     graph_window.title(graph_name)
-
+    graph_window.iconbitmap('Images\QTTMS logo.ico')
     #Initialize Tkinter and Matplotlib Figure
     fig_graph, axis_graph = plt.subplots()
 
@@ -273,9 +179,6 @@ def open_graph_window(tempQueue, graph_name):
     y_vals = []
     
     def animate(i):
-        tempVal = None
-        if not tempQueue.empty():
-            tempVal = tempQueue.get()
         try:
             conn = pyodbc.connect(conn_str, timeout=5)
             cursor = conn.cursor()
@@ -358,10 +261,118 @@ def open_graph_window(tempQueue, graph_name):
 
     graph_window.mainloop()
 
+def readTemperature(modbus_client):
+    global qT2Temp
+    global qT3Temp
+    global qT4Temp
+    global qT5Temp
+    qT2Temp = qT3Temp = qT4Temp = qT5Temp = None
+    global tempQueue
+    global email_sent
+    while True: 
+        try:
+            #print("Connecting to the server...")
+            connection = modbus_client.connect()
+            if(connection==True):
+                moxa_connection_label.config(text=str("MOXA: CONNECTED..! IP: 10.7.228.186"), foreground="Green")
+                global email_sent
+                email_sent = False
+                #Quench Tank 2 Temperature
+                try:
+                    inpReg2 = modbus_client.read_input_registers(0x06,1,unit=2)
+                    qT2Temp = (inpReg2.registers[0]/10)
+                    QT2_temp_label.config(text=str(qT2Temp)+"°C",background="blue",font=('Arial','50','bold'))
+                except Exception as e:
+                    qT2Temp=0
+                    QT2_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
+                
+                #Quench Tank 3 Temperature
+                try:
+                    inpReg3 = modbus_client.read_input_registers(0x06,1,unit=3)
+                    qT3Temp = (inpReg3.registers[0]/10)
+                    QT3_temp_label.config(text=str(qT3Temp)+"°C",background="blue",font=('Arial','50','bold'))
+                except Exception as e:
+                    qT3Temp=0
+                    QT3_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
+                
+                #Quench Tank 4 Temperature
+                try:
+                    inpReg4 = modbus_client.read_input_registers(0x06,1,unit=4)
+                    qT4Temp = (inpReg4.registers[0]/10)
+                    QT4_temp_label.config(text=str(qT4Temp)+"°C",background="blue",font=('Arial','50','bold'))
+                except Exception as e:
+                    qT4Temp=0
+                    QT4_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
+                
+                #Quench Tank 5 Temperature
+                try:
+                    inpReg5 = modbus_client.read_input_registers(0x06,1,unit=5)
+                    qT5Temp = (inpReg5.registers[0]/10)
+                    QT5_temp_label.config(text=str(qT5Temp)+"°C",background="blue",font=('Arial','50','bold'))
+                except Exception as e:
+                    qT5Temp=0
+                    QT5_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
+
+                tempQueue.put((qT2Temp, qT3Temp, qT4Temp, qT5Temp))
+                #close the modbus connection
+                modbus_client.close()
+                root.update()
+                time.sleep(2)
+                
+            else:
+                QT2_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
+                QT3_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
+                QT4_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
+                QT5_temp_label.config(text="Moxa Disconnected", background="red", font=('Arial','20','bold'))
+                if not email_sent:
+                    try:
+                        conn = pyodbc.connect(conn_str, timeout=5)
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT CURRENT_TIMESTAMP")
+                        row = cursor.fetchone()
+
+                        timestamp = row[0].strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+                        timestamp = "unknown"
+
+                    timestamp = row[0].strftime("%Y-%m-%d %H:%M:%S")
+                    email_subject = "QTTMS Alerts - MOXA Server Disconnected from the system!"
+                    email_body =  f'''Attention: The MOXA converter with  IP 10.7.228.187 was disconnected from the system at {timestamp} \n Location - Gate No. 10, L&T Special Steels and Heavy Forgings, Hazira, Surat.
+                    '''
+                    email_message = EmailMessage()
+                    email_message['From'] = email_sender
+                    email_message['To'] = email_receiver
+                    email_message['subject'] = email_subject
+                    email_message.set_content(email_body)
+
+                    context = ssl.create_default_context()
+
+                    with smtplib.SMTP_SSL('smtp.gmail.com',465, context=context) as smtp:
+
+                        smtp.login(email_sender, email_password)
+                        smtp.sendmail(email_sender, email_receiver, email_message.as_string())
+                    email_sent = True  # set the flag to True after the email is sent
+                    raise Exception(moxa_connection_label.config(text=str("MOXA: DISCONNECTED..! IP: 10.7.228.186"),foreground="red"))
+        except Exception as e:
+            #raise this exception if the DP 9 Connecter is disconnected from MOXA.(Failed to read the registers)
+            #print(e)
+            time.sleep(2)  # Wait before trying to reconnect
+
+def dump_to_db():
+    # Initialize the temperature variables
+    global tempQueue
+    while True:
+        qT2Temp, qT3Temp, qT4Temp, qT5Temp = tempQueue.get()
+        print(f"{qT2Temp},{qT3Temp},{qT4Temp},{qT5Temp}")
+        insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qT5Temp)
+        time.sleep(5)
+
 root = Tk()
 root.configure(background="black")
 root.title("Quenching Tank Temperature Monitoring")
 root.geometry("1280x720")
+root.iconbitmap('Images\QTTMS logo.ico')
 
 #display label
 heading_label = Label(root, text="QUENCHING TANK TEMPERATURE MONITORING", background="orange", font=('Arial','30','bold'), foreground="black")
@@ -454,20 +465,20 @@ mentor_label.grid(row=13, column=3, sticky ='e')
 #graph buttons
 frame1 = Frame(root)
 frame1.grid(row=5, column=1, pady=10)
-QT2_Graph = Button(frame1, text="QT2 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempQueue=qT2TempQueue,graph_name="QT2 GRAPH")).grid(row=0, column=0)
+QT2_Graph = Button(frame1, text="QT2 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT2Temp,graph_name="QT2 GRAPH")).grid(row=0, column=0)
 
 frame2 = Frame(root)
 frame2.grid(row=5, column=3, pady=10)
-QT3_Graph = Button(frame2, text="QT3 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempQueue=qT3TempQueue, graph_name="QT3 GRAPH")).grid(row=0, column=0)
+QT3_Graph = Button(frame2, text="QT3 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT3Temp, graph_name="QT3 GRAPH")).grid(row=0, column=0)
 
 frame3 = Frame(root)
 frame3.grid(row=10, column=1, pady=10)
-QT4_Graph = Button(frame3, text="QT4 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempQueue=qT4TempQueue, graph_name="QT4 GRAPH")).grid(row=0, column=0)
+QT4_Graph = Button(frame3, text="QT4 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT4Temp, graph_name="QT4 GRAPH")).grid(row=0, column=0)
 
 frame4 = Frame(root)
 frame4 = Frame(root)
 frame4.grid(row=10, column=3, pady=10)
-QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempQueue=qT5TempQueue, graph_name="QT5 GRAPH")).grid(row=0, column=0)
+QT5_Graph = Button(frame4, text="QT5 GRAPH", width=20, height=2, font=('Arial','12','bold'), background='light blue', foreground='black', command=lambda: open_graph_window(tempVal=qT5Temp, graph_name="QT5 GRAPH")).grid(row=0, column=0)
 
 #add settings button
 settings_frame = Frame(root)
