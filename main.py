@@ -1,14 +1,11 @@
 '''
     Live Graph issue solved
 '''
-from turtle import back
+
 import pyodbc
 from tkinter import *
 import time
-#import pymodbus
-from pymodbus.pdu import ModbusRequest
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
-from pymodbus.transaction import ModbusRtuFramer
 import threading
 
 #graph plotting dependencies

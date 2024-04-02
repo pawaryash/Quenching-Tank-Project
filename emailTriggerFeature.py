@@ -3,15 +3,11 @@
     create and import password from a separate file
 
 '''
-from turtle import back
-from pandas import Timestamp
+
 import pyodbc
 from tkinter import *
 import time
-#import pymodbus
-from pymodbus.pdu import ModbusRequest
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
-from pymodbus.transaction import ModbusRtuFramer
 import threading
 
 #graph plotting dependencies
