@@ -1,5 +1,6 @@
 '''
     Email trigger for MOXA disconnection
+    create and import password from a sepearte file
 
 '''
 from turtle import back
@@ -36,6 +37,8 @@ from queue import Queue
 #email triggering dependencies
 from email.message import EmailMessage
 from multiprocessing import context
+
+#import password from a seperate file for security reasons
 from password import mypassword
 import ssl
 import smtplib
