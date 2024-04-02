@@ -1,6 +1,6 @@
 '''
     Email trigger for MOXA disconnection
-    create and import password from a sepearte file
+    create and import password from a separate file
 
 '''
 from turtle import back
