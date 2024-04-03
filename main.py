@@ -75,7 +75,7 @@ def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
 
         sql_query = "INSERT INTO quenchTanksTemp(QT2,QT3,QT4,QT5,date_time) VALUES (?,?,?,?,GETDATE())"
         params = (qT2Temp, qT3Temp, qT4Temp, qt5Temp)
-        print(sql_query)
+        #print(sql_query)
         cursor.execute(sql_query, params)
         conn.commit()
         conn.close()

@@ -80,9 +80,10 @@ def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
         qT4Temp = 0 if qT4Temp is None else qT4Temp
         qt5Temp = 0 if qt5Temp is None else qt5Temp
 
-        sql_query = f"INSERT INTO quenchTanksTemp(QT2,QT3,QT4,QT5,date_time) VALUES ({qT2Temp},{qT3Temp},{qT4Temp},{qt5Temp},GETDATE())"
-        print(sql_query)
-        cursor.execute(sql_query)
+        sql_query = "INSERT INTO quenchTanksTemp(QT2,QT3,QT4,QT5,date_time) VALUES (?,?,?,?,GETDATE())"
+        params = (qT2Temp, qT3Temp, qT4Temp, qt5Temp)
+        #print(sql_query)
+        cursor.execute(sql_query,params)
         conn.commit()
         conn.close()
     except Exception as e:
