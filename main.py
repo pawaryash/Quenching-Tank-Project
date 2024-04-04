@@ -1,5 +1,7 @@
 '''
-    Live Graph issue solved
+    use with statement for  database connections
+    and for efficient use of resources
+
 '''
 
 import pyodbc
@@ -62,23 +64,23 @@ conn_str = (
     
 def insert_temperature_to_db(conn_str,qT2Temp,qT3Temp,qT4Temp,qt5Temp):
     try:
-        conn = pyodbc.connect(conn_str, timeout=5)
-        database_connection_label.configure(text="Database Connection: CONNECTED", foreground='green')
-        cursor = conn.cursor()
+        with pyodbc.connect(conn_str, timeout=5) as conn:
+            database_connection_label.configure(text="Database Connection: CONNECTED", foreground='green')
+            cursor = conn.cursor()
 
-        # Replace None with 0 for all temperature variables
-        #all the temp values will be 0 if no value is read.
-        qT2Temp = 0 if qT2Temp is None else qT2Temp
-        qT3Temp = 0 if qT3Temp is None else qT3Temp
-        qT4Temp = 0 if qT4Temp is None else qT4Temp
-        qt5Temp = 0 if qt5Temp is None else qt5Temp
+            # Replace None with 0 for all temperature variables
+            #all the temp values will be 0 if no value is read.
+            qT2Temp = 0 if qT2Temp is None else qT2Temp
+            qT3Temp = 0 if qT3Temp is None else qT3Temp
+            qT4Temp = 0 if qT4Temp is None else qT4Temp
+            qt5Temp = 0 if qt5Temp is None else qt5Temp
 
-        sql_query = "INSERT INTO quenchTanksTemp(QT2,QT3,QT4,QT5,date_time) VALUES (?,?,?,?,GETDATE())"
-        params = (qT2Temp, qT3Temp, qT4Temp, qt5Temp)
-        #print(sql_query)
-        cursor.execute(sql_query, params)
-        conn.commit()
-        conn.close()
+            sql_query = "INSERT INTO quenchTanksTemp(QT2,QT3,QT4,QT5,date_time) VALUES (?,?,?,?,GETDATE())"
+            params = (qT2Temp, qT3Temp, qT4Temp, qt5Temp)
+            #print(sql_query)
+            cursor.execute(sql_query, params)
+            conn.commit()
+        #conn.close()
     except Exception as e:
         print(e)
         database_connection_label.configure(text="Database Connection: DISCONNECTED", foreground='red')
@@ -273,9 +275,9 @@ def open_graph_window(tempQueue, graph_name):
         if not tempQueue.empty():
             tempVal = tempQueue.get()
         try:
-            conn = pyodbc.connect(conn_str, timeout=5)
-            cursor = conn.cursor()
-            cursor.execute("SELECT CURRENT_TIMESTAMP")
+            with pyodbc.connect(conn_str, timeout=5) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT CURRENT_TIMESTAMP")
         except Exception as e:
             messagebox.showinfo("Database not connected."," Unable to fetch server date and time")
         row = cursor.fetchone()
@@ -311,7 +313,6 @@ def open_graph_window(tempQueue, graph_name):
         # Add padding to the y-axis
         plt.margins(y=0.2) 
         conn.commit()
-        conn.close() 
 
     #call to animate function
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
@@ -353,6 +354,12 @@ def open_graph_window(tempQueue, graph_name):
     graph_window.protocol("WM_DELETE_WINDOW", close_graph_window)
 
     graph_window.mainloop()
+
+#for properly closing the application
+# def on_closing():
+
+#     root.destroy()
+    
 
 root = Tk()
 root.configure(background="black")
