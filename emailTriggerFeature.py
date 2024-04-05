@@ -9,6 +9,7 @@ from tkinter import *
 import time
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 import threading
+stop_event = threading.Event()
 
 #graph plotting dependencies
 import matplotlib.pyplot as plt
@@ -28,6 +29,7 @@ from tkinter import messagebox
 import serial.tools.list_ports
 
 #For temp queue
+import queue
 from queue import Queue
 
 #email triggering dependencies
@@ -269,7 +271,7 @@ def readTemperature(modbus_client):
     qT2Temp = qT3Temp = qT4Temp = qT5Temp = None
     global tempQueue
     global email_sent
-    while True: 
+    while not stop_event.is_set(): 
         try:
             #print("Connecting to the server...")
             connection = modbus_client.connect()
@@ -312,7 +314,8 @@ def readTemperature(modbus_client):
                 except Exception as e:
                     qT5Temp=0
                     QT5_temp_label.config(text="PID Disconnected", background="red", font=('Arial','20','bold'))
-
+                if stop_event.is_set():
+                    break
                 tempQueue.put((qT2Temp, qT3Temp, qT4Temp, qT5Temp))
                 #close the modbus connection
                 modbus_client.close()
@@ -362,11 +365,28 @@ def readTemperature(modbus_client):
 def dump_to_db():
     # Initialize the temperature variables
     global tempQueue
-    while True:
-        qT2Temp, qT3Temp, qT4Temp, qT5Temp = tempQueue.get()
+    global qt2_graph_temp, qt3_graph_temp, qt4_graph_temp, qt5_graph_temp
+    while not stop_event.is_set():
+        try:
+            qT2Temp, qT3Temp, qT4Temp, qT5Temp = tempQueue.get(timeout=5)
+        except queue.Empty:
+            continue 
+
+        qt2_graph_temp = qT2Temp
+        qt3_graph_temp = qT3Temp
+        qt4_graph_temp = qT4Temp
+        qt5_graph_temp = qT5Temp
+        
         print(f"{qT2Temp},{qT3Temp},{qT4Temp},{qT5Temp}")
         insert_temperature_to_db(conn_str, qT2Temp,qT3Temp,qT4Temp,qT5Temp)
+        if stop_event.is_set():
+                break
         time.sleep(5)
+    
+#for properly closing the application
+def on_closing():
+    stop_event.set()
+    root.destroy()
 
 root = Tk()
 root.configure(background="black")
@@ -492,12 +512,17 @@ def main():
     update_modbus_config_label(com_port)
 
     modbus_client = ModbusClient(method = 'rtu', port=com_port, stopbits = 1, bytesize = 8, parity = 'N' , baudrate= 9600)
+    #global read_temp_thread
     read_temp_thread = threading.Thread(target=readTemperature, args=(modbus_client,))
+    read_temp_thread.daemon = True
     read_temp_thread.start()
 
+    # global dump_to_db_thread
     dump_to_db_thread = threading.Thread(target=dump_to_db)
+    dump_to_db_thread.daemon = True
     dump_to_db_thread.start()
 
 if __name__ == "__main__":
     main()
+    root.protocol("WM_DELETE_WINDOW", on_closing)
     root.mainloop()
