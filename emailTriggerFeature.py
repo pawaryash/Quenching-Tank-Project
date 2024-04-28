@@ -1,6 +1,7 @@
 '''
     Email trigger for MOXA disconnection
     create and import password from a separate file
+    also added proper handling of opened threads upon closing
 
 '''
 
