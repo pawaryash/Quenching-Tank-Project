@@ -14,10 +14,5 @@
 ### Create GUI --done
 ### Merge GUI with the backend --done
 ### Database connection exception handling --done
-### Plot Graphs for temperature variations --ongoing
+### Plot Graphs for temperature variations --done
 
-P.S. Will work on optimization and management at the end.
-
-### STANDARD OPERATING PROCEDURE
-Step 1 - Connect the MOXA and configure its IP 
-Step 2 - Also make sure the host and MOXA Server in the same network. 
