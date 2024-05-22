@@ -1,3 +1,5 @@
+Please find the detailed documentation report in the Documentation folder.
+
 # Quenching-Tank-Project
 
 #### Required dependencies
